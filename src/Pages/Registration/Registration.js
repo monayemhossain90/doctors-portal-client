@@ -1,23 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import {
-    useCreateUserWithEmailAndPassword,
+  useCreateUserWithEmailAndPassword,
   useSignInWithGoogle,
+  useUpdateProfile,
 } from "react-firebase-hooks/auth";
 import auth from "../../Firebase.init";
 import Loading from "../../components/Loading";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Registration = () => {
   const [signInWithGoogle, gUser, gLoading, gError] = useSignInWithGoogle(auth);
-  const [
-    createUserWithEmailAndPassword,
-    user,
-    loading,
-    error,
-  ] = useCreateUserWithEmailAndPassword(auth);
-
- 
+  const [createUserWithEmailAndPassword, user, loading, error] =
+    useCreateUserWithEmailAndPassword(auth);
+  const navigate = useNavigate();
+  const [updateProfile, updating, UpdateError] = useUpdateProfile(auth);
 
   const {
     register,
@@ -29,22 +26,24 @@ const Registration = () => {
     console.log(user || gUser);
   }
 
-  if (loading || gLoading) {
+  if (loading || gLoading || updating) {
     return <Loading></Loading>;
   }
 
   let signInError;
-  if (error || gError) {
+  if (error || gError || UpdateError) {
     signInError = (
       <p className="text-red-500">{error?.message || gError?.message}</p>
     );
   }
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log(data);
-    createUserWithEmailAndPassword(data.email, data.password);
+    await createUserWithEmailAndPassword(data.email, data.password);
+    await updateProfile({ displayName: data.name });
+    
+    navigate("/appointment")
   };
-
 
   return (
     <div className="flex justify-center items-center h-screen my-10">
@@ -53,8 +52,7 @@ const Registration = () => {
           <h2 className="text-center text-2xl font-bold">Register Now</h2>
           {/* registration form start */}
           <form onSubmit={handleSubmit(onSubmit)}>
-
-          <div className="form-control w-full max-w-xs">
+            <div className="form-control w-full max-w-xs">
               <label className="label">
                 <span className="label-text">Name</span>
               </label>
@@ -62,16 +60,12 @@ const Registration = () => {
                 type="text"
                 placeholder="Your Name"
                 className="input input-bordered w-full max-w-xs"
-                {...register(
-                  "name",
-                  {
-                    required: {
-                      value: true,
-                      message: "name is required",
-                    },
-                  }
-                 
-                )}
+                {...register("name", {
+                  required: {
+                    value: true,
+                    message: "name is required",
+                  },
+                })}
               />
               <label className="label">
                 {errors.name?.type === "required" && (
@@ -79,11 +73,8 @@ const Registration = () => {
                     {errors.name.message}
                   </span>
                 )}
-             
               </label>
             </div>
-
-
 
             <div className="form-control w-full max-w-xs">
               <label className="label">
